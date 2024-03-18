@@ -14,6 +14,24 @@ type httpReq struct {
 	headers map[string]string
 }
 
+type httpRes struct {
+	version string
+	status  string
+	headers map[string]string
+	body    string
+}
+
+func (r httpRes) encode() []byte {
+	var res string
+	res += r.version + " " + r.status + "\r\n"
+	for k, v := range r.headers {
+		res += k + ": " + v + "\r\n"
+	}
+	res += "\r\n"
+	res += r.body
+	return []byte(res)
+}
+
 func main() {
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
@@ -46,18 +64,27 @@ func handleConnection(conn net.Conn) {
 		fmt.Printf("\nRecieved: %s Bytes: %d\n", string(buf[:n]), n)
 
 		req, err := parseRequest(string(buf))
-		var res []byte
-		if req.path == "/" {
-			res = []byte("HTTP/1.1 200 OK\r\n\r\n")
-		} else {
-			res = []byte("HTTP/1.1 404 Not Found\r\n\r\n")
+		if err != nil {
+			fmt.Println("Error parsing request: ", err.Error())
+			return
 		}
 
-		_, err = conn.Write(res)
+		res := httpRes{
+			version: req.version,
+			status:  "200 OK",
+			headers: map[string]string{
+				"Content-Type":   "text/plain",
+				"Content-Length": "3",
+			},
+			body: "abc",
+		}
+
+		_, err = conn.Write(res.encode())
 		if err != nil {
 			fmt.Println("Error writing: ", err.Error())
 			return
 		}
+		fmt.Println("Sent: ", res)
 	}
 }
 
