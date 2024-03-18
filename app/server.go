@@ -107,7 +107,7 @@ func handleConnection(conn net.Conn) {
 				res.body = string(data)
 				res.headers = map[string]string{
 					"Content-Type":   "application/octet-stream",
-					"Content-Length": fmt.Sprintf("%d", 10),
+					"Content-Length": fmt.Sprintf("%d", len(res.body)),
 				}
 			}
 			file.Close()
