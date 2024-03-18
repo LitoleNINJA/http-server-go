@@ -106,7 +106,7 @@ func handleConnection(conn net.Conn) {
 				res.status = "200 OK"
 				res.body = string(data)
 				res.headers = map[string]string{
-					"Content-Type":   "text/plain",
+					"Content-Type":   "application/octet-stream",
 					"Content-Length": fmt.Sprintf("%d", 10),
 				}
 			}
