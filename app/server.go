@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -32,7 +34,11 @@ func (r httpRes) encode() []byte {
 	return []byte(res)
 }
 
+var dir = flag.String("directory", "", "Directory to serve files from")
+
 func main() {
+	flag.Parse()
+
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
@@ -87,6 +93,25 @@ func handleConnection(conn net.Conn) {
 				"Content-Type":   "text/plain",
 				"Content-Length": fmt.Sprintf("%d", len(res.body)),
 			}
+		} else if filename, ok := CutPrefix(req.path, "/files/"); ok {
+			file, err := os.Open(*dir + "/" + filename)
+			if err != nil {
+				res.status = "404 Not Found"
+			} else {
+				data, err := io.ReadAll(file)
+				if err != nil {
+					fmt.Println("Error reading file: ", err.Error())
+					return
+				}
+				res.status = "200 OK"
+				res.body = string(data)
+				res.headers = map[string]string{
+					"Content-Type":   "text/plain",
+					"Content-Length": fmt.Sprintf("%d", 10),
+				}
+			}
+			file.Close()
+
 		} else {
 			res.status = "404 Not Found"
 		}
