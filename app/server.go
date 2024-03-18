@@ -70,18 +70,16 @@ func handleConnection(conn net.Conn) {
 		}
 
 		var res httpRes
+		res.version = req.version
 		if req.path == "/" {
 			res.status = "200 OK"
 		} else if pre, ok := CutPrefix(req.path, "/echo/"); ok {
-			res = httpRes{
-				version: req.version,
-				status:  "200 OK",
-				headers: map[string]string{
-					"Content-Type":   "text/plain",
-					"Content-Length": fmt.Sprintf("%d", len(pre)),
-				},
-				body: pre,
+			res.status = "200 OK"
+			res.headers = map[string]string{
+				"Content-Type":   "text/plain",
+				"Content-Length": fmt.Sprintf("%d", len(pre)),
 			}
+			res.body = pre
 		} else {
 			res.status = "404 Not Found"
 		}
