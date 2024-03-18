@@ -80,6 +80,13 @@ func handleConnection(conn net.Conn) {
 				"Content-Length": fmt.Sprintf("%d", len(pre)),
 			}
 			res.body = pre
+		} else if strings.HasPrefix(req.path, "/user-agent") {
+			res.status = "200 OK"
+			res.body = req.headers["User-Agent"]
+			res.headers = map[string]string{
+				"Content-Type":   "text/plain",
+				"Content-Length": fmt.Sprintf("%d", len(res.body)),
+			}
 		} else {
 			res.status = "404 Not Found"
 		}
