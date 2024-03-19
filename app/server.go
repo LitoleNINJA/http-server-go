@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -14,6 +15,7 @@ type httpReq struct {
 	path    string
 	version string
 	headers map[string]string
+	body    string
 }
 
 type httpRes struct {
@@ -76,7 +78,68 @@ func handleConnection(conn net.Conn) {
 	}
 
 	var res httpRes
+	switch req.method {
+	case "GET":
+		res, err = handleGet(req)
+		if err != nil {
+			fmt.Println("Error handling GET: ", err.Error())
+			return
+		}
+	case "POST":
+		res, err = handlePost(req)
+		if err != nil {
+			fmt.Println("Error handling POST: ", err.Error())
+			return
+		}
+	default:
+		res.status = "405 Method Not Allowed"
+	}
+
+	_, err = conn.Write(res.encode())
+	if err != nil {
+		fmt.Println("Error writing: ", err.Error())
+		return
+	}
+	fmt.Println("Sent: ", res)
+}
+
+func parseRequest(req string) (httpReq, error) {
+	a := strings.Split(req, "\r\n")
+
+	method := strings.TrimSpace(strings.Split(a[0], " ")[0])
+	path := strings.TrimSpace(strings.Split(a[0], " ")[1])
+	version := strings.TrimSpace(strings.Split(a[0], " ")[2])
+	headers := make(map[string]string)
+	body := ""
+	isBody := false
+	for i := 1; i < len(a); i++ {
+		if a[i] == "" {
+			isBody = true
+			continue
+		}
+		if isBody {
+			body += a[i]
+		} else {
+			h := strings.Split(a[i], ":")
+			headers[strings.TrimSpace(h[0])] = strings.TrimSpace(h[1])
+		}
+	}
+
+	// fmt.Printf("Method: %s\nPath: %s\nVersion: %s\nHeaders: %v\n Body: %s\n", method, path, version, headers, body)
+
+	return httpReq{
+		method:  method,
+		path:    path,
+		version: version,
+		headers: headers,
+		body:    body,
+	}, nil
+}
+
+func handleGet(req httpReq) (httpRes, error) {
+	var res httpRes
 	res.version = req.version
+
 	if req.path == "/" {
 		res.status = "200 OK"
 	} else if pre, ok := CutPrefix(req.path, "/echo/"); ok {
@@ -101,7 +164,7 @@ func handleConnection(conn net.Conn) {
 			data, err := io.ReadAll(file)
 			if err != nil {
 				fmt.Println("Error reading file: ", err.Error())
-				return
+				return httpRes{}, err
 			}
 			res.status = "200 OK"
 			res.body = string(data)
@@ -115,35 +178,32 @@ func handleConnection(conn net.Conn) {
 		res.status = "404 Not Found"
 	}
 
-	_, err = conn.Write(res.encode())
-	if err != nil {
-		fmt.Println("Error writing: ", err.Error())
-		return
-	}
-	fmt.Println("Sent: ", res)
-
+	return res, nil
 }
 
-func parseRequest(req string) (httpReq, error) {
-	a := strings.Split(req, "\r\n")
+func handlePost(req httpReq) (httpRes, error) {
+	var res httpRes
+	res.version = req.version
+	res.status = "201 Created"
 
-	method := strings.TrimSpace(strings.Split(a[0], " ")[0])
-	path := strings.TrimSpace(strings.Split(a[0], " ")[1])
-	version := strings.TrimSpace(strings.Split(a[0], " ")[2])
-	headers := make(map[string]string)
-	for i := 1; i < len(a); i++ {
-		if a[i] == "" {
-			break
+	filename, ok := CutPrefix(req.path, "/files/")
+	if !ok {
+		res.status = "400 Bad Request"
+	} else {
+		file, err := os.Create(*dir + "/" + filename)
+		if err != nil {
+			fmt.Println("Error creating file: ", err.Error())
+			return httpRes{}, err
 		}
-		h := strings.Split(a[i], ":")
-		headers[strings.TrimSpace(h[0])] = strings.TrimSpace(h[1])
-	}
-	// fmt.Printf("Method: %s\nPath: %s\nVersion: %s\nHeaders: %v\n", method, path, version, headers)
+		defer file.Close()
 
-	return httpReq{
-		method:  method,
-		path:    path,
-		version: version,
-		headers: headers,
-	}, nil
+		data := req.body
+		len, _ := strconv.Atoi(req.headers["Content-Length"])
+		_, err = file.WriteString(data[:len])
+		if err != nil {
+			fmt.Println("Error writing to file: ", err.Error())
+			return httpRes{}, err
+		}
+	}
+	return res, nil
 }
