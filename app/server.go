@@ -97,6 +97,7 @@ func handleConnection(conn net.Conn) {
 			file, err := os.Open(*dir + "/" + filename)
 			if err != nil {
 				res.status = "404 Not Found"
+				res.body = "File not found"
 			} else {
 				data, err := io.ReadAll(file)
 				if err != nil {
