@@ -111,7 +111,6 @@ func handleConnection(conn net.Conn) {
 				}
 			}
 			file.Close()
-
 		} else {
 			res.status = "404 Not Found"
 		}
