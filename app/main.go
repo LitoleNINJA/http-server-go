@@ -47,10 +47,8 @@ func handleConnection(conn net.Conn) {
 		Log.Request(clientAddr, req, n)
 
 		
-		var res httpRes
 		if val, ok := req.headers["Connection"]; ok && val == "close" {
-			res.setHeader("Connection", "close")
-			res.isClose = true
+			req.isClose = true
 		}
 		switch req.method {
 		case "GET":
@@ -78,7 +76,7 @@ func handleConnection(conn net.Conn) {
 		}
 		Log.Response(clientAddr, res)
 
-		if res.isClose {
+		if req.isClose {
 			Log.Info("Closing connection")
 			break
 		}

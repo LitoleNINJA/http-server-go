@@ -10,6 +10,10 @@ import (
 
 func handleGet(req httpReq) (httpRes, error) {
 	res := newResponse(req.version, StatusOK)
+	if req.isClose {
+		res.setHeader("Connection", "close")
+	}
+
 	if val, ok := req.headers["Accept-Encoding"]; ok {
 		encodings := strings.Split(val, ",")
 		for _, enc := range encodings {

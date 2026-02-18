@@ -19,6 +19,7 @@ type httpReq struct {
 	version string
 	headers map[string]string
 	body    string
+	isClose bool
 }
 
 type httpRes struct {
