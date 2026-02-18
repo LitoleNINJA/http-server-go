@@ -5,17 +5,21 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 func handleGet(req httpReq) (httpRes, error) {
 	res := newResponse(req.version, StatusOK)
 	if val, ok := req.headers["Accept-Encoding"]; ok {
-		switch val {
-		case "gzip":
-			res.setHeader("Content-Encoding", val)
-
-		default:
-			Log.Error("Encoding not supported.", "Client encoding : ", val)
+		encodings := strings.Split(val, ",")
+		for _, enc := range encodings {
+			switch strings.TrimSpace(enc) {
+			case "gzip":
+				res.setHeader("Content-Encoding", enc)
+	
+			default:
+				Log.Error("Encoding not supported.", "Encoding : ", enc)
+			}
 		}
 	}
 	switch {
