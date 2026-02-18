@@ -49,6 +49,7 @@ func handleConnection(conn net.Conn) {
 		if val, ok := req.headers["Connection"]; ok && val == "close" {
 			res := newResponse(req.version, StatusOK)
 			res.setHeader("Connection", "close")
+			res.setTextBody("")
 
 			_, err = conn.Write(res.encode())
 			if err != nil {
