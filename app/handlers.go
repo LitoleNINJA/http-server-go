@@ -15,7 +15,8 @@ func handleGet(req httpReq) (httpRes, error) {
 		for _, enc := range encodings {
 			switch strings.TrimSpace(enc) {
 			case "gzip":
-				res.setHeader("Content-Encoding", enc)
+				res.setHeader("Content-Encoding", "gzip")
+				res.isEncoded = true
 	
 			default:
 				Log.Error("Encoding not supported.", "Encoding : ", enc)
@@ -28,6 +29,9 @@ func handleGet(req httpReq) (httpRes, error) {
 
 	case HasPrefix(req.path, "/echo/"):
 		message, _ := CutPrefix(req.path, "/echo/")
+		if res.isEncoded {
+			message = encodeGZIP(message)
+		}
 		res.setTextBody(message)
 
 	case HasPrefix(req.path, "/user-agent"):

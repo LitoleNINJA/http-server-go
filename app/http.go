@@ -22,10 +22,11 @@ type httpReq struct {
 }
 
 type httpRes struct {
-	version string
-	status  string
-	headers map[string]string
-	body    string
+	version 	string
+	status  	string
+	headers 	map[string]string
+	body    	string
+	isEncoded 	bool
 }
 
 func newResponse(version, status string) httpRes {
@@ -41,15 +42,16 @@ func (r *httpRes) setHeader(key string, val string) {
 }
 
 func (r *httpRes) setTextBody(body string) {
+	r.setHeader("Content-Type", "text/plain")
+	r.setHeader("Content-Length", fmt.Sprintf("%d", len(body)))
+	
 	r.body = body
-	r.headers["Content-Type"] = "text/plain"
-	r.headers["Content-Length"] = fmt.Sprintf("%d", len(body))
 }
 
 func (r *httpRes) setFileBody(body string) {
 	r.body = body
-	r.headers["Content-Type"] = "application/octet-stream"
-	r.headers["Content-Length"] = fmt.Sprintf("%d", len(body))
+	r.setHeader("Content-Type", "application/octet-stream")
+	r.setHeader("Content-Length", fmt.Sprintf("%d", len(body)))
 }
 
 func (r httpRes) encode() []byte {
