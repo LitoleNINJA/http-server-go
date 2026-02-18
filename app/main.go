@@ -46,22 +46,12 @@ func handleConnection(conn net.Conn) {
 		}
 		Log.Request(clientAddr, req, n)
 
-		if val, ok := req.headers["Connection"]; ok && val == "close" {
-			res := newResponse(req.version, StatusOK)
-			res.setHeader("Connection", "close")
-			res.setTextBody("")
-
-			_, err = conn.Write(res.encode())
-			if err != nil {
-				Log.Error("Failed to send close response", "client", clientAddr, "error", err.Error())
-				return
-			}
-
-			Log.Response(clientAddr, res)
-			break
-		}
-
+		
 		var res httpRes
+		if val, ok := req.headers["Connection"]; ok && val == "close" {
+			res.setHeader("Connection", "close")
+			res.isClose = true
+		}
 		switch req.method {
 		case "GET":
 			res, err = handleGet(req)
@@ -87,5 +77,10 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 		Log.Response(clientAddr, res)
+
+		if res.isClose {
+			Log.Info("Closing connection")
+			break
+		}
 	}
 }

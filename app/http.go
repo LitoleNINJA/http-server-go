@@ -27,6 +27,7 @@ type httpRes struct {
 	headers 	map[string]string
 	body    	string
 	isEncoded 	bool
+	isClose 	bool
 }
 
 func newResponse(version, status string) httpRes {
