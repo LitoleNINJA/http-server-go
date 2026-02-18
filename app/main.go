@@ -29,46 +29,48 @@ func main() {
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
-	clientAddr := conn.RemoteAddr().String()
+	for {
+		clientAddr := conn.RemoteAddr().String()
 
-	buf := make([]byte, 1024)
-	n, err := conn.Read(buf)
-	if err != nil {
-		Log.Error("Failed to read request", "client", clientAddr, "error", err.Error())
-		return
-	}
-
-	req, err := parseRequest(string(buf))
-	if err != nil {
-		Log.Error("Failed to parse request", "client", clientAddr, "error", err.Error())
-		return
-	}
-	Log.Request(clientAddr, req, n)
-
-	var res httpRes
-	switch req.method {
-	case "GET":
-		res, err = handleGet(req)
+		buf := make([]byte, 1024)
+		n, err := conn.Read(buf)
 		if err != nil {
-			Log.Error("GET handler failed", "client", clientAddr, "path", req.path, "error", err.Error())
+			Log.Error("Failed to read request", "client", clientAddr, "error", err.Error())
 			return
 		}
-	case "POST":
-		res, err = handlePost(req)
+
+		req, err := parseRequest(string(buf))
 		if err != nil {
-			Log.Error("POST handler failed", "client", clientAddr, "path", req.path, "error", err.Error())
+			Log.Error("Failed to parse request", "client", clientAddr, "error", err.Error())
 			return
 		}
-	default:
-		Log.Warn("Unsupported method", "client", clientAddr, "method", req.method)
-		res.version = req.version
-		res.status = StatusMethodNotAllowed
-	}
+		Log.Request(clientAddr, req, n)
 
-	_, err = conn.Write(res.encode())
-	if err != nil {
-		Log.Error("Failed to send response", "client", clientAddr, "error", err.Error())
-		return
+		var res httpRes
+		switch req.method {
+		case "GET":
+			res, err = handleGet(req)
+			if err != nil {
+				Log.Error("GET handler failed", "client", clientAddr, "path", req.path, "error", err.Error())
+				return
+			}
+		case "POST":
+			res, err = handlePost(req)
+			if err != nil {
+				Log.Error("POST handler failed", "client", clientAddr, "path", req.path, "error", err.Error())
+				return
+			}
+		default:
+			Log.Warn("Unsupported method", "client", clientAddr, "method", req.method)
+			res.version = req.version
+			res.status = StatusMethodNotAllowed
+		}
+
+		_, err = conn.Write(res.encode())
+		if err != nil {
+			Log.Error("Failed to send response", "client", clientAddr, "error", err.Error())
+			return
+		}
+		Log.Response(clientAddr, res)
 	}
-	Log.Response(clientAddr, res)
 }
