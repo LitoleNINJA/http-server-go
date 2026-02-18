@@ -46,7 +46,7 @@ func handleConnection(conn net.Conn) {
 		}
 		Log.Request(clientAddr, req, n)
 
-		if _, ok := req.headers["Connection: close"]; ok {
+		if val, ok := req.headers["Connection"]; ok && val == "close" {
 			Log.Info("Closing connection.", "Client", clientAddr)
 			break
 		}
