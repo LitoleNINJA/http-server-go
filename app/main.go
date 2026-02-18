@@ -47,7 +47,16 @@ func handleConnection(conn net.Conn) {
 		Log.Request(clientAddr, req, n)
 
 		if val, ok := req.headers["Connection"]; ok && val == "close" {
-			Log.Info("Closing connection.", "Client", clientAddr)
+			res := newResponse(req.version, StatusOK)
+			res.setHeader("Connection", "close")
+
+			_, err = conn.Write(res.encode())
+			if err != nil {
+				Log.Error("Failed to send close response", "client", clientAddr, "error", err.Error())
+				return
+			}
+
+			Log.Response(clientAddr, res)
 			break
 		}
 
