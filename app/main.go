@@ -50,6 +50,8 @@ func handleConnection(conn net.Conn) {
 		if val, ok := req.headers["Connection"]; ok && val == "close" {
 			req.isClose = true
 		}
+
+		var res httpRes
 		switch req.method {
 		case "GET":
 			res, err = handleGet(req)
